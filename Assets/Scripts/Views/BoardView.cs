@@ -154,6 +154,10 @@ namespace Match3.Views
             _views[x1, y1] = view2;
             _views[x2, y2] = view1;
             
+            // Update internal grid positions to keep them in sync
+            view1.UpdateGridPosition(x2, y2);
+            view2.UpdateGridPosition(x1, y1);
+            
             // Wait for animations
             yield return tween1.WaitForCompletion();
         }
@@ -346,9 +350,12 @@ namespace Match3.Views
                     var tile = tilesInColumn[i];
                     
                     // Check if view already exists (shouldn't but be safe)
-                    if (_views[tile.X, tile.Y] != null && _views[tile.X, tile.Y].gameObject.activeSelf)
+                    // Check if view already exists - if so, it's stale/wrong, so remove it
+                    if (_views[tile.X, tile.Y] != null)
                     {
-                        continue;
+                        Debug.LogWarning($"AnimateSpawn: Stale view found at ({tile.X}, {tile.Y}) - replacing");
+                        TilePool.Return(_views[tile.X, tile.Y]);
+                        _views[tile.X, tile.Y] = null;
                     }
                     
                     var view = CreateTileView(tile);
