@@ -321,11 +321,16 @@ namespace Match3.Core
             BoardView.SyncViewsWithData(BoardController);
             
             var falls = BoardController.CollapseColumns();
-            yield return BoardView.AnimateFall(falls);
             
-            // Spawn new tiles
+            // Spawn new tiles immediately to drop with the rest
             var newTiles = BoardController.SpawnNewTiles();
-            yield return BoardView.AnimateSpawn(newTiles);
+            
+            // Animate both in parallel
+            var fallRoutine = StartCoroutine(BoardView.AnimateFall(falls));
+            var spawnRoutine = StartCoroutine(BoardView.AnimateSpawn(newTiles));
+            
+            yield return fallRoutine;
+            yield return spawnRoutine;
             
             // Validate board after special tile effects
             BoardView.ValidateBoard(BoardController);
@@ -368,11 +373,16 @@ namespace Match3.Core
                     
                     // Collapse columns
                     var falls = BoardController.CollapseColumns();
-                    yield return BoardView.AnimateFall(falls);
                     
-                    // Spawn new tiles
+                    // Spawn new tiles immediately
                     var newTiles = BoardController.SpawnNewTiles();
-                    yield return BoardView.AnimateSpawn(newTiles);
+                    
+                    // Animate both in parallel
+                    var fallRoutine = StartCoroutine(BoardView.AnimateFall(falls));
+                    var spawnRoutine = StartCoroutine(BoardView.AnimateSpawn(newTiles));
+                    
+                    yield return fallRoutine;
+                    yield return spawnRoutine;
                 }
                 else
                 {

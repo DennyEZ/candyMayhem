@@ -534,6 +534,7 @@ MonoBehaviour:
   FallDuration: 0.3
   ClearDuration: 0.2
   SpawnDelay: 0.05
+  Gravity: 20
 --- !u!4 &1981092225
 Transform:
   m_ObjectHideFlags: 0

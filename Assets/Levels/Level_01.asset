@@ -27,4 +27,4 @@ MonoBehaviour:
   MaxMoves: 30
   UseCustomLayout: 0
   UseBlockers: 0
-  SpecialTileBonus: 0.1
+  SpecialTileBonus: 0.05

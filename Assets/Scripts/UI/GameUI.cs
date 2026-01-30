@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
 using Sirenix.OdinInspector;
 using Match3.Core;
 using Match3.Levels;
@@ -58,6 +59,8 @@ namespace Match3.UI
                 PauseButton.onClick.AddListener(OnPauseClicked);
             if (RestartButton != null)
                 RestartButton.onClick.AddListener(OnRestartClicked);
+            if (QuitButton != null)
+                QuitButton.onClick.AddListener(OnQuitClicked);
         }
         
         private void BindEvents()
@@ -204,6 +207,12 @@ namespace Match3.UI
                 
                 GameManager.StartLevel(GameManager.CurrentLevel);
             }
+        }
+
+        private void OnQuitClicked()
+        {
+            // Assuming "MainMenu" is the name of your menu scene
+            SceneManager.LoadScene("MainMenu");
         }
     }
 }

@@ -18,10 +18,10 @@ MonoBehaviour:
   YellowSprite: {fileID: 6358040702757662528, guid: 778f01257ac05344b98a8622d64df511, type: 3}
   PurpleSprite: {fileID: -8923911374754931897, guid: db86cf8102f6f87419b03a306cb420bb, type: 3}
   OrangeSprite: {fileID: 4121880872312635667, guid: ad3f0e8b28d1536448225afe8425bb4e, type: 3}
-  HorizontalRocketSprite: {fileID: 0}
-  VerticalRocketSprite: {fileID: 0}
-  BombSprite: {fileID: 0}
-  RainbowSprite: {fileID: 0}
+  HorizontalRocketSprite: {fileID: 4924650530068740980, guid: 7039969b0cbc72b498f1c9a74b474d3c, type: 3}
+  VerticalRocketSprite: {fileID: -5766332333748783285, guid: f8e7512d03d7ed24e861cb2d49dc70fd, type: 3}
+  BombSprite: {fileID: -1483665779731714255, guid: eef8d1da06c06274489076474cd05c91, type: 3}
+  RainbowSprite: {fileID: -5743474462039176297, guid: d98aec69ab899b0468be0b012720ece7, type: 3}
   Ice1Sprite: {fileID: 0}
   Ice2Sprite: {fileID: 0}
   Ice3Sprite: {fileID: 0}

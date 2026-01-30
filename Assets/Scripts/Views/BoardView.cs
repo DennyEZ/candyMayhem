@@ -402,7 +402,7 @@ namespace Match3.Views
             
             var allTweens = new List<Tween>();
             float maxDuration = 0f;
-            float staggerDelay = 0.08f; // Delay between drops in same column
+            float staggerDelay = 0.06f; // Small delay for visual separation
             
             // Spawn all tiles with stagger per column
             foreach (var kvp in tilesByColumn)
@@ -410,7 +410,8 @@ namespace Match3.Views
                 int columnIndex = kvp.Key;
                 var tilesInColumn = kvp.Value;
                 // Base column delay can remain small or zero if we rely on vertical stagger
-                float columnDelay = columnIndex * 0.02f; 
+                // Base column delay can remain small or zero if we rely on vertical stagger
+                float columnDelay = 0f;  // Remove valid delay for immediate response 
                 
                 for (int i = 0; i < tilesInColumn.Count; i++)
                 {
@@ -427,10 +428,11 @@ namespace Match3.Views
                     var view = CreateTileView(tile);
                     
                     // Calculate spawn position
-                    // Start from exactly Height units above the target.
-                    // This ensures every tile travels the SAME distance (Distance = Height * TileSize),
-                    // so with gravity, they all take the same time and maintain separation.
-                    var startPos = GridToWorld(tile.X, tile.Y + _height);
+                    // Start just above the stack by using the number of new tiles as the drop distance.
+                    // This ensures the drop distance matches the collapse distance of tiles below,
+                    // keeping the fall speed synchronized.
+                    int dropDistance = tilesInColumn.Count;
+                    var startPos = GridToWorld(tile.X, tile.Y + dropDistance);
                     var targetPos = GridToWorld(tile.X, tile.Y);
                     
                     // Calculate physics duration
