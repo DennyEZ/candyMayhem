@@ -43,6 +43,8 @@ namespace Match3.Views
         
         [ShowInInspector, ReadOnly]
         public TileType CurrentType { get; private set; }
+
+        public float ClipTopY { get; set; } = 9999f; // Default to no clipping
         
         /// <summary>
         /// Updates the grid position tracking (used during fall animations).
@@ -51,6 +53,20 @@ namespace Match3.Views
         {
             GridX = x;
             GridY = y;
+        }
+
+        private void LateUpdate()
+        {
+            if (_spriteRenderer == null) return;
+            
+            // Logic-based clipping: Hide if strictly above the clip line
+            bool shouldBeVisible = transform.position.y <= ClipTopY;
+            
+            if (_spriteRenderer.enabled != shouldBeVisible)
+            {
+                _spriteRenderer.enabled = shouldBeVisible;
+                if (_overlayRenderer != null) _overlayRenderer.enabled = shouldBeVisible;
+            }
         }
         
         private Tween _currentTween;
@@ -116,6 +132,8 @@ namespace Match3.Views
             // Make sure it's visible
             gameObject.SetActive(true);
             _spriteRenderer.enabled = true;
+            // _spriteRenderer.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
+            // if (_overlayRenderer != null) _overlayRenderer.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
             
             Debug.Log($"TileView setup at ({GridX},{GridY}) pos={worldPosition}, type={CurrentType}");
         }
@@ -252,10 +270,20 @@ namespace Match3.Views
         public Tween AnimateClear()
         {
             KillCurrentTween();
+            
+            // Trigger explosion effect
+            if (_spriteRenderer != null)
+            {
+                // Use the logical color for particles (renderer color might be white tint)
+                Color particleColor = GetFallbackColor(CurrentType);
+                FX.ParticleFactory.PlayExplosion(transform.position, particleColor);
+            }
+            
             var sequence = DOTween.Sequence();
-            sequence.Append(transform.DOScale(_originalScale * 1.2f, ClearDuration * 0.3f).SetEase(Ease.OutQuad));
-            sequence.Append(transform.DOScale(Vector3.zero, ClearDuration * 0.7f).SetEase(ClearEase));
-            sequence.Join(_spriteRenderer.DOFade(0f, ClearDuration * 0.7f));
+            // Quick shrink with no "puff" up, just clean destruction
+            sequence.Append(transform.DOScale(Vector3.zero, ClearDuration * 0.5f).SetEase(Ease.InBack));
+            sequence.Join(_spriteRenderer.DOFade(0f, ClearDuration * 0.5f));
+            
             _currentTween = sequence;
             return sequence;
         }

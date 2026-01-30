@@ -40,6 +40,7 @@ namespace Match3.Views
         
         private int _width, _height;
         private float _effectiveTileSize;
+        private float _clipTopY;
         
         /// <summary>
         /// Initializes the board view for a given grid size.
@@ -81,6 +82,11 @@ namespace Match3.Views
                     -(_height * _effectiveTileSize) / 2f + _effectiveTileSize / 2f - 0.5f  // Shift down slightly for UI
                 );
             }
+
+            // Calculate Clip Threshold (Top of top row)
+            // GridToWorld(0, _height-1) is the center of the top row.
+            // Add half a tile size (plus a tiny margin) to define the visual top edge.
+            _clipTopY = GridToWorld(0, _height - 1).y + (_effectiveTileSize * 0.5f);
             
             _views = new TileView[width, height];
             
@@ -90,6 +96,49 @@ namespace Match3.Views
             {
                 inputHandler.SetBoardSize(width, height, _effectiveTileSize, BoardOffset);
             }
+            
+            // CreateBoardMask();
+        }
+        
+        // private void CreateBoardMask()
+        // {
+        //     var maskName = "BoardMask_Procedural";
+        //     var existing = transform.Find(maskName);
+        //     if (existing != null) Destroy(existing.gameObject); // Recreate to ensure correct size
+            
+        //     var maskObj = new GameObject(maskName);
+        //     maskObj.transform.SetParent(transform);
+            
+        //     // Calculate center of the board
+        //     float totalWidth = _width * _effectiveTileSize;
+        //     float totalHeight = _height * _effectiveTileSize;
+            
+        //     float centerX = BoardOffset.x + ((_width - 1) * _effectiveTileSize) / 2f;
+        //     float centerY = BoardOffset.y + ((_height - 1) * _effectiveTileSize) / 2f;
+            
+        //     maskObj.transform.position = new Vector3(centerX, centerY, 0f);
+            
+        //     var mask = maskObj.AddComponent<SpriteMask>();
+        //     mask.sprite = CreateSquareSprite();
+            
+        //     // Ensure the mask covers all sorting orders used by tiles
+        //     mask.isCustomRangeActive = true;
+        //     mask.frontSortingOrder = 1000;
+        //     mask.backSortingOrder = -1000;
+            
+        //     // Scale the mask to cover the board area
+        //     // Sprite is 1x1 pixels (1 unit). We need it to be totalWidth x totalHeight.
+        //     // Add a tiny bit of padding to edges
+        //     maskObj.transform.localScale = new Vector3(totalWidth, totalHeight, 1f);
+        // }
+        
+        private Sprite CreateSquareSprite()
+        {
+            var texture = new Texture2D(2, 2);
+            var colors = new Color[4] { Color.white, Color.white, Color.white, Color.white };
+            texture.SetPixels(colors);
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, 2, 2), new Vector2(0.5f, 0.5f), 2); // 2 pixels per unit -> 1x1 unit size
         }
         
         /// <summary>
@@ -102,6 +151,7 @@ namespace Match3.Views
             
             view.transform.SetParent(TileParent);
             view.Setup(data, worldPos);
+            view.ClipTopY = _clipTopY;
             
             _views[data.X, data.Y] = view;
             
@@ -377,10 +427,10 @@ namespace Match3.Views
                     var view = CreateTileView(tile);
                     
                     // Calculate spawn position
-                    // Start much higher to give "falling from sky" feel
-                    // Stagger spacing: higher tiles start higher
-                    int spawnOffset = tilesInColumn.Count - i; 
-                    var startPos = GridToWorld(tile.X, _height + spawnOffset);
+                    // Start from exactly Height units above the target.
+                    // This ensures every tile travels the SAME distance (Distance = Height * TileSize),
+                    // so with gravity, they all take the same time and maintain separation.
+                    var startPos = GridToWorld(tile.X, tile.Y + _height);
                     var targetPos = GridToWorld(tile.X, tile.Y);
                     
                     // Calculate physics duration
