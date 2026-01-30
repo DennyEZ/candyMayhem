@@ -196,9 +196,11 @@ namespace Match3.Views
             Debug.Log($"Cleared {viewsToReturn.Count} tiles");
         }
         
-        /// <summary>
-        /// Animates tiles falling to fill gaps.
-        /// </summary>
+        [Title("Physics Settings")]
+        public float Gravity = 20f; // Units per second squared
+        
+        // ...
+
         public IEnumerator AnimateFall(List<(TileData tile, int fromY, int toY)> falls)
         {
             if (falls == null || falls.Count == 0)
@@ -207,6 +209,7 @@ namespace Match3.Views
             }
             
             var tweens = new List<Tween>();
+            float maxDuration = 0f;
             
             // CRITICAL FIX: Build a snapshot of ALL views by their current GridX/GridY BEFORE any modifications
             // This prevents race conditions when multiple tiles fall in the same column
@@ -250,7 +253,7 @@ namespace Match3.Views
                 }
             }
             
-            // Now process falls using our snapshot
+            // Process falls
             foreach (var (tile, fromY, toY) in sortedFalls)
             {
                 // Look up view from our snapshot using the ORIGINAL position
@@ -262,8 +265,15 @@ namespace Match3.Views
                 
                 if (view != null)
                 {
+                    var startPos = GridToWorld(tile.X, fromY); // Using logical start pos for distance calc
                     var targetPos = GridToWorld(tile.X, toY);
-                    tweens.Add(view.AnimateFall(targetPos));
+                    
+                    // Calculate duration based on physics: t = sqrt(2*d/g)
+                    float distance = Vector3.Distance(startPos, targetPos);
+                    float duration = Mathf.Sqrt(2f * distance / Gravity);
+                    
+                    tweens.Add(view.AnimateFall(targetPos, duration));
+                    maxDuration = Mathf.Max(maxDuration, duration);
                     
                     // Update view's internal position tracking
                     view.UpdateGridPosition(tile.X, toY);
@@ -276,18 +286,23 @@ namespace Match3.Views
                     Debug.LogWarning($"AnimateFall: No view found for tile at ({tile.X}, {fromY}) -> ({tile.X}, {toY}) - creating new view");
                     // Create a new view if completely missing
                     var newView = CreateTileView(tile);
-                    // Start from above and animate down
+                    
                     var startPos = GridToWorld(tile.X, fromY);
                     var targetPos = GridToWorld(tile.X, toY);
+                    
+                    float distance = Vector3.Distance(startPos, targetPos);
+                    float duration = Mathf.Sqrt(2f * distance / Gravity);
+                    
                     newView.transform.position = startPos;
-                    tweens.Add(newView.AnimateFall(targetPos));
+                    tweens.Add(newView.AnimateFall(targetPos, duration));
+                    maxDuration = Mathf.Max(maxDuration, duration);
                 }
             }
             
-            // Wait for all fall animations to complete
+            // Wait for max duration
             if (tweens.Count > 0)
             {
-                yield return new WaitForSeconds(FallDuration + 0.05f); // Small buffer for reliability
+                yield return new WaitForSeconds(maxDuration);
             }
         }
         
@@ -337,19 +352,20 @@ namespace Match3.Views
             
             var allTweens = new List<Tween>();
             float maxDuration = 0f;
+            float staggerDelay = 0.08f; // Delay between drops in same column
             
             // Spawn all tiles with stagger per column
             foreach (var kvp in tilesByColumn)
             {
                 int columnIndex = kvp.Key;
                 var tilesInColumn = kvp.Value;
-                float columnDelay = columnIndex * SpawnDelay * 0.5f; // Slight stagger between columns
+                // Base column delay can remain small or zero if we rely on vertical stagger
+                float columnDelay = columnIndex * 0.02f; 
                 
                 for (int i = 0; i < tilesInColumn.Count; i++)
                 {
                     var tile = tilesInColumn[i];
                     
-                    // Check if view already exists (shouldn't but be safe)
                     // Check if view already exists - if so, it's stale/wrong, so remove it
                     if (_views[tile.X, tile.Y] != null)
                     {
@@ -360,28 +376,50 @@ namespace Match3.Views
                     
                     var view = CreateTileView(tile);
                     
-                    // Calculate spawn position - stagger height based on order in column
-                    int spawnOffset = tilesInColumn.Count - i; // Higher tiles spawn from further above
+                    // Calculate spawn position
+                    // Start much higher to give "falling from sky" feel
+                    // Stagger spacing: higher tiles start higher
+                    int spawnOffset = tilesInColumn.Count - i; 
                     var startPos = GridToWorld(tile.X, _height + spawnOffset);
                     var targetPos = GridToWorld(tile.X, tile.Y);
                     
+                    // Calculate physics duration
+                    float distance = Vector3.Distance(startPos, targetPos);
+                    float duration = Mathf.Sqrt(2f * distance / Gravity);
+                    
                     // Immediate visibility setup
-                    view.transform.localScale = Vector3.one;
+                    // view.transform.localScale = Vector3.one;
+                    // view.transform.position = startPos;
+                    // view.gameObject.SetActive(false); // Hide until delay -> REMEVED CAUSES VALIDATION ERROR
+                    
+                    // Allow TileView.AnimateSpawn to handle initial state (scale 0)
                     view.transform.position = startPos;
                     
-                    var tween = view.AnimateSpawn(startPos, targetPos);
-                    if (tween != null)
-                    {
-                        allTweens.Add(tween);
-                        maxDuration = Mathf.Max(maxDuration, tween.Duration());
-                    }
+                    // Delay based on index (bottom first, then up)
+                    // The bottom-most tile (i=0) should start first? 
+                    // No, usually they fall continuously. 
+                    // Let's create a delayed start using DOVirtual
+                    
+                    float startDelay = columnDelay + (i * staggerDelay);
+                    
+                    // We need a wrapper coroutine or sequence for the delay to activate object
+                    // But simpler to just use DOScale/DOMove with Delay
+                    
+                    // Set active before tween starts
+                    // view.gameObject.SetActive(true); // actually handled by AnimateSpawn internally
+                    
+                    var tween = view.AnimateSpawn(startPos, targetPos, duration);
+                    tween.SetDelay(startDelay);
+                    
+                    allTweens.Add(tween);
+                    maxDuration = Mathf.Max(maxDuration, startDelay + duration);
                 }
             }
             
             // Wait for all spawn animations to complete
             if (allTweens.Count > 0)
             {
-                yield return new WaitForSeconds(maxDuration + 0.1f); // Buffer for reliability
+                yield return new WaitForSeconds(maxDuration);
             }
             
             // Final validation: ensure all tiles have views

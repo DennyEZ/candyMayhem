@@ -31,7 +31,7 @@ namespace Match3.Views
         public float SpawnDuration = 0.25f;
         
         public Ease SwapEase = Ease.OutBack;
-        public Ease FallEase = Ease.OutBounce;
+        public Ease FallEase = Ease.InQuad;
         public Ease ClearEase = Ease.InBack;
         
         [Title("Debug")]
@@ -195,15 +195,16 @@ namespace Match3.Views
         /// <summary>
         /// Animates falling to a new position.
         /// </summary>
-        public Tween AnimateFall(Vector3 targetPosition)
+        public Tween AnimateFall(Vector3 targetPosition, float duration = -1f)
         {
-            return MoveTo(targetPosition, FallDuration, FallEase);
+            float d = duration > 0 ? duration : FallDuration;
+            return MoveTo(targetPosition, d, FallEase);
         }
         
         /// <summary>
         /// Animates spawning from above.
         /// </summary>
-        public Tween AnimateSpawn(Vector3 startPosition, Vector3 targetPosition)
+        public Tween AnimateSpawn(Vector3 startPosition, Vector3 targetPosition, float duration = -1f)
         {
             // Ensure we have a valid target scale
             if (_originalScale == Vector3.zero)
@@ -221,10 +222,12 @@ namespace Match3.Views
                 _spriteRenderer.color = c;
             }
             
+            float d = duration > 0 ? duration : SpawnDuration;
+            
             KillCurrentTween();
             var sequence = DOTween.Sequence();
-            sequence.Append(transform.DOScale(_originalScale, SpawnDuration * 0.5f).SetEase(Ease.OutBack));
-            sequence.Join(transform.DOMove(targetPosition, SpawnDuration).SetEase(Ease.OutBounce));
+            sequence.Append(transform.DOScale(_originalScale, d * 0.3f).SetEase(Ease.OutQuad));
+            sequence.Join(transform.DOMove(targetPosition, d).SetEase(Ease.InQuad));
             
             // CRITICAL: Ensure tile is fully visible when animation completes
             sequence.OnComplete(() => {
