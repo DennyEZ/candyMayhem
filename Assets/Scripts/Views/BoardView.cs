@@ -21,6 +21,16 @@ namespace Match3.Views
         [Required]
         public Transform TileParent;
         
+        [Title("Ice Overlay")]
+        [Tooltip("Sprites for each ice level: [0]=Level 1, [1]=Level 2, [2]=Level 3. Leave empty to use single sprite with opacity.")]
+        public Sprite[] IceSprites = new Sprite[3];  // Index 0 = Level 1, Index 1 = Level 2, Index 2 = Level 3
+        
+        [Tooltip("Fallback sprite if IceSprites array is empty")]
+        public Sprite IceOverlaySprite;
+        
+        [Tooltip("Parent transform for ice overlays (optional, uses TileParent if null)")]
+        public Transform IceOverlayParent;
+        
         [Title("Grid Settings")]
         public float TileSize = 1.2f;
         public float TileSpacing = 0.15f;
@@ -37,6 +47,9 @@ namespace Match3.Views
         
         [ShowInInspector, ReadOnly]
         private TileView[,] _views;
+        
+        // Ice overlay management - fixed to cell positions
+        private Dictionary<Vector2Int, SpriteRenderer> _iceOverlays = new Dictionary<Vector2Int, SpriteRenderer>();
         
         private int _width, _height;
         private float _effectiveTileSize;
@@ -165,6 +178,187 @@ namespace Match3.Views
         {
             if (x < 0 || x >= _width || y < 0 || y >= _height) return null;
             return _views[x, y];
+        }
+        
+        #region Ice Overlay Management (Cell-Level)
+        
+        /// <summary>
+        /// Initializes ice overlays from level data.
+        /// Call this after Initialize() when setting up a level.
+        /// </summary>
+        public void InitializeIceOverlays(Dictionary<Vector2Int, int> icePositions)
+        {
+            // Clear any existing ice overlays
+            ClearAllIceOverlays();
+            
+            if (icePositions == null) return;
+            
+            foreach (var kvp in icePositions)
+            {
+                CreateIceOverlay(kvp.Key, kvp.Value);
+            }
+            
+            Debug.Log($"Created {_iceOverlays.Count} ice overlays");
+        }
+        
+        /// <summary>
+        /// Creates an ice overlay at a fixed cell position.
+        /// </summary>
+        private void CreateIceOverlay(Vector2Int cellPos, int iceLevel)
+        {
+            if (iceLevel <= 0) return;
+            if (_iceOverlays.ContainsKey(cellPos)) return;
+            
+            var iceObj = new GameObject($"IceOverlay_{cellPos.x}_{cellPos.y}");
+            iceObj.transform.SetParent(IceOverlayParent != null ? IceOverlayParent : TileParent);
+            iceObj.transform.position = GridToWorld(cellPos.x, cellPos.y);
+            
+            var spriteRenderer = iceObj.AddComponent<SpriteRenderer>();
+            spriteRenderer.sortingOrder = 10;  // Render above gems
+            
+            // Set initial sprite based on ice level
+            UpdateIceVisual(spriteRenderer, iceLevel);
+            
+            // Scale to match tile size
+            if (spriteRenderer.sprite != null)
+            {
+                float spriteWidth = spriteRenderer.sprite.bounds.size.x;
+                float scale = TileSize / spriteWidth;
+                iceObj.transform.localScale = new Vector3(scale, scale, 1f);
+            }
+            
+            _iceOverlays[cellPos] = spriteRenderer;
+        }
+        
+        /// <summary>
+        /// Updates the ice overlay visual when ice is damaged.
+        /// </summary>
+        public void UpdateIceOverlay(TileData tile)
+        {
+            var pos = new Vector2Int(tile.X, tile.Y);
+            
+            if (tile.IceLevel <= 0)
+            {
+                // Ice destroyed - remove overlay
+                RemoveIceOverlay(pos);
+            }
+            else if (_iceOverlays.TryGetValue(pos, out var spriteRenderer))
+            {
+                // Update visual for remaining ice
+                UpdateIceVisual(spriteRenderer, tile.IceLevel);
+                
+                // Animate crack effect
+                AnimateIceCrack(spriteRenderer);
+            }
+            else
+            {
+                Debug.LogWarning($"No ice overlay found at ({pos.x},{pos.y}) but ice level is {tile.IceLevel}");
+            }
+        }
+        
+        /// <summary>
+        /// Updates ice sprite and color based on ice level.
+        /// Uses IceSprites array if available, otherwise uses single sprite with opacity.
+        /// </summary>
+        private void UpdateIceVisual(SpriteRenderer renderer, int iceLevel)
+        {
+            // Try to use sprite from array (index = iceLevel - 1)
+            int spriteIndex = iceLevel - 1;
+            
+            if (IceSprites != null && spriteIndex >= 0 && spriteIndex < IceSprites.Length && IceSprites[spriteIndex] != null)
+            {
+                renderer.sprite = IceSprites[spriteIndex];
+                renderer.color = Color.white;  // No tint when using dedicated sprites
+            }
+            else
+            {
+                // Fallback: use single sprite with opacity
+                renderer.sprite = IceOverlaySprite;
+                
+                // More layers = more opaque
+                // Level 1: 0.35 alpha, Level 2: 0.55 alpha, Level 3: 0.75 alpha
+                float alpha = 0.15f + (iceLevel * 0.2f);
+                renderer.color = new Color(0.7f, 0.9f, 1f, alpha);  // Light blue
+            }
+        }
+        
+        /// <summary>
+        /// Animates ice cracking effect.
+        /// </summary>
+        private void AnimateIceCrack(SpriteRenderer renderer)
+        {
+            // Quick shake effect
+            renderer.transform.DOShakePosition(0.15f, 0.05f, 20, 90, false, true);
+            
+            // Flash effect
+            var originalColor = renderer.color;
+            renderer.DOColor(Color.white, 0.05f).OnComplete(() => 
+                renderer.DOColor(originalColor, 0.1f));
+        }
+        
+        /// <summary>
+        /// Removes ice overlay at a position (when ice is fully destroyed).
+        /// </summary>
+        private void RemoveIceOverlay(Vector2Int pos)
+        {
+            if (_iceOverlays.TryGetValue(pos, out var spriteRenderer))
+            {
+                // Animate destruction
+                spriteRenderer.transform.DOScale(Vector3.zero, 0.2f).SetEase(Ease.InBack);
+                spriteRenderer.DOFade(0f, 0.2f).OnComplete(() =>
+                {
+                    if (spriteRenderer != null && spriteRenderer.gameObject != null)
+                    {
+                        Destroy(spriteRenderer.gameObject);
+                    }
+                });
+                
+                _iceOverlays.Remove(pos);
+            }
+        }
+        
+        /// <summary>
+        /// Clears all ice overlays.
+        /// </summary>
+        public void ClearAllIceOverlays()
+        {
+            foreach (var kvp in _iceOverlays)
+            {
+                if (kvp.Value != null && kvp.Value.gameObject != null)
+                {
+                    Destroy(kvp.Value.gameObject);
+                }
+            }
+            _iceOverlays.Clear();
+        }
+        
+        #endregion
+        
+        /// <summary>
+        /// Updates the crate sprite when crate is damaged.
+        /// </summary>
+        public void UpdateCrateSprite(TileData tile)
+        {
+            var view = GetView(tile.X, tile.Y);
+            if (view != null)
+            {
+                view.UpdateVisuals(tile.Type);
+            }
+        }
+        
+        /// <summary>
+        /// Removes a crate view when destroyed.
+        /// </summary>
+        public void RemoveCrateView(Vector2Int pos)
+        {
+            var view = GetView(pos.x, pos.y);
+            if (view != null)
+            {
+                view.AnimateClear();
+                _views[pos.x, pos.y] = null;
+                // View will be returned to pool after animation
+                DOVirtual.DelayedCall(0.3f, () => TilePool.Return(view));
+            }
         }
         
         /// <summary>

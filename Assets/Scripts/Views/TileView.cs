@@ -129,13 +129,14 @@ namespace Match3.Views
             
             UpdateVisuals(data.Type);
             
+            // Apply ice overlay if present
+            UpdateIceOverlay(data.IceLevel);
+            
             // Make sure it's visible
             gameObject.SetActive(true);
             _spriteRenderer.enabled = true;
-            // _spriteRenderer.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
-            // if (_overlayRenderer != null) _overlayRenderer.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
             
-            Debug.Log($"TileView setup at ({GridX},{GridY}) pos={worldPosition}, type={CurrentType}");
+            Debug.Log($"TileView setup at ({GridX},{GridY}) pos={worldPosition}, type={CurrentType}, ice={data.IceLevel}");
         }
         
         /// <summary>
@@ -182,14 +183,37 @@ namespace Match3.Views
                 case TileType.VerticalRocket: return new Color(0.3f, 0.3f, 1f);
                 case TileType.Bomb: return new Color(0.3f, 0.3f, 0.3f);
                 case TileType.Rainbow: return Color.white;
-                case TileType.Ice1:
-                case TileType.Ice2:
-                case TileType.Ice3: return new Color(0.7f, 0.9f, 1f, 0.7f);
                 case TileType.Stone: return new Color(0.5f, 0.5f, 0.5f);
                 case TileType.Crate1:
                 case TileType.Crate2: return new Color(0.6f, 0.4f, 0.2f);
                 default: return Color.white;
             }
+        }
+        
+        /// <summary>
+        /// Updates the ice overlay visual based on ice level.
+        /// </summary>
+        public void UpdateIceOverlay(int iceLevel)
+        {
+            if (_overlayRenderer == null)
+            {
+                // No overlay renderer assigned - skip ice visuals
+                return;
+            }
+            
+            if (iceLevel <= 0)
+            {
+                _overlayRenderer.gameObject.SetActive(false);
+                return;
+            }
+            
+            _overlayRenderer.gameObject.SetActive(true);
+            
+            // Adjust opacity based on ice level (more layers = more opaque)
+            // Level 1: 0.3 alpha, Level 2: 0.5 alpha, Level 3: 0.7 alpha
+            float alpha = 0.2f + (iceLevel * 0.15f);
+            var color = new Color(0.7f, 0.9f, 1f, alpha);  // Light blue ice color
+            _overlayRenderer.color = color;
         }
         
         /// <summary>
@@ -322,6 +346,9 @@ namespace Match3.Views
                 _spriteRenderer.color = color;
                 _spriteRenderer.enabled = true;
             }
+            
+            // Reset ice overlay
+            UpdateIceOverlay(0);
             
             GridX = -1;
             GridY = -1;

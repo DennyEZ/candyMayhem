@@ -17,6 +17,9 @@ namespace Match3.Core
         [ShowInInspector, ReadOnly]
         private TileData[,] _grid;
         
+        // Ice is stored at cell level, not on tiles, so it stays fixed when gems swap
+        private int[,] _iceGrid;
+        
         [ShowInInspector, ReadOnly]
         public int Width { get; private set; }
         
@@ -34,6 +37,11 @@ namespace Match3.Core
         public event Action<List<TileData>> OnTilesCleared;
         public event Action<List<(TileData tile, int fromY, int toY)>> OnTilesFell;
         
+        // Ice and Crate events
+        public event Action<TileData> OnIceDamaged;
+        public event Action<TileData> OnCrateDamaged;
+        public event Action<Vector2Int> OnCrateDestroyed;
+        
         /// <summary>
         /// Initializes the board with a level configuration.
         /// </summary>
@@ -45,6 +53,7 @@ namespace Match3.Core
             _random = seed.HasValue ? new System.Random(seed.Value) : new System.Random();
             
             _grid = new TileData[Width, Height];
+            _iceGrid = new int[Width, Height];  // Cell-level ice storage
             
             if (levelData.UseCustomLayout && levelData.InitialLayout != null)
             {
@@ -59,6 +68,12 @@ namespace Match3.Core
             if (levelData.UseBlockers)
             {
                 ApplyBlockers(levelData);
+            }
+            
+            // Apply ice overlays
+            if (levelData.UseIceOverlays)
+            {
+                ApplyIceOverlays(levelData);
             }
             
             // Ensure no initial matches
@@ -102,18 +117,55 @@ namespace Match3.Core
                 
                 if (IsValidPosition(pos.x, pos.y))
                 {
-                    // For ice, keep the gem underneath
-                    if (blockerType.IsIce())
-                    {
-                        // Ice is an overlay - the gem stays
-                        // We'll handle this in the view layer
-                    }
-                    else
+                    // Only apply crates and stone as blockers
+                    if (blockerType.IsCrate() || blockerType == TileType.Stone)
                     {
                         CreateTile(pos.x, pos.y, blockerType);
                     }
                 }
             }
+        }
+        
+        private void ApplyIceOverlays(Levels.LevelData levelData)
+        {
+            foreach (var kvp in levelData.IcePositions)
+            {
+                var pos = kvp.Key;
+                var iceLevel = Mathf.Clamp(kvp.Value, 1, 3);
+                
+                if (IsValidPosition(pos.x, pos.y))
+                {
+                    // Store ice at cell level, not on tiles
+                    _iceGrid[pos.x, pos.y] = iceLevel;
+                    Debug.Log($"Applied ice level {iceLevel} at cell ({pos.x},{pos.y})");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Gets ice level at a cell position.
+        /// </summary>
+        public int GetIceLevel(int x, int y)
+        {
+            if (!IsValidPosition(x, y)) return 0;
+            return _iceGrid[x, y];
+        }
+        
+        /// <summary>
+        /// Sets ice level at a cell position.
+        /// </summary>
+        public void SetIceLevel(int x, int y, int level)
+        {
+            if (!IsValidPosition(x, y)) return;
+            _iceGrid[x, y] = Mathf.Max(0, level);
+        }
+        
+        /// <summary>
+        /// Checks if a cell has ice.
+        /// </summary>
+        public bool HasIceAt(int x, int y)
+        {
+            return GetIceLevel(x, y) > 0;
         }
         
         private void ResolveInitialMatches()
@@ -387,21 +439,51 @@ namespace Match3.Core
         
         /// <summary>
         /// Clears matched tiles and returns them for goal tracking.
+        /// Handles ice overlays (damage ice first) and damages adjacent crates.
         /// </summary>
         public List<TileData> ClearMatches(List<MatchInfo> matches)
         {
             var clearedTiles = new List<TileData>();
             var clearedPositions = new HashSet<Vector2Int>();
+            var allMatchPositions = new List<Vector2Int>();
             
             foreach (var match in matches)
             {
                 foreach (var pos in match.Positions)
                 {
+                    allMatchPositions.Add(pos);
+                    
                     if (clearedPositions.Contains(pos)) continue;
                     
                     var tile = GetTile(pos.x, pos.y);
-                    if (tile != null)
+                    if (tile == null) continue;
+                    
+                    // Check cell-level ice (fixed to position, not tile)
+                    int cellIce = _iceGrid[pos.x, pos.y];
+                    if (cellIce > 0)
                     {
+                        // Damage ice instead of clearing tile
+                        _iceGrid[pos.x, pos.y]--;
+                        int remaining = _iceGrid[pos.x, pos.y];
+                        
+                        // Create a temp data object for the event with position info
+                        var iceEventData = new TileData(tile.Type, pos.x, pos.y);
+                        iceEventData.IceLevel = remaining;  // Send the NEW level after damage
+                        OnIceDamaged?.Invoke(iceEventData);
+                        Debug.Log($"Ice damaged at cell ({pos.x},{pos.y}), remaining: {remaining}");
+                        
+                        if (remaining <= 0)
+                        {
+                            // Ice broken, now clear the tile
+                            clearedTiles.Add(tile);
+                            clearedPositions.Add(pos);
+                            _grid[pos.x, pos.y] = null;
+                        }
+                        // If ice remains, tile stays - will be matched again next cascade
+                    }
+                    else
+                    {
+                        // Normal clear
                         clearedTiles.Add(tile);
                         clearedPositions.Add(pos);
                         _grid[pos.x, pos.y] = null;
@@ -416,8 +498,99 @@ namespace Match3.Core
                 }
             }
             
+            // Damage adjacent crates and ice
+            DamageAdjacentCrates(allMatchPositions);
+            DamageAdjacentIce(allMatchPositions);
+            
             OnTilesCleared?.Invoke(clearedTiles);
             return clearedTiles;
+        }
+        
+        /// <summary>
+        /// Damages crates adjacent to matched positions.
+        /// </summary>
+        private void DamageAdjacentCrates(List<Vector2Int> matchPositions)
+        {
+            var damagedCrates = new HashSet<Vector2Int>();
+            
+            foreach (var pos in matchPositions)
+            {
+                // Check 4 directions for crates
+                CheckAndDamageCrate(pos.x - 1, pos.y, damagedCrates);
+                CheckAndDamageCrate(pos.x + 1, pos.y, damagedCrates);
+                CheckAndDamageCrate(pos.x, pos.y - 1, damagedCrates);
+                CheckAndDamageCrate(pos.x, pos.y + 1, damagedCrates);
+            }
+        }
+        
+        private void CheckAndDamageCrate(int x, int y, HashSet<Vector2Int> alreadyDamaged)
+        {
+            if (!IsValidPosition(x, y)) return;
+            
+            var cratePos = new Vector2Int(x, y);
+            if (alreadyDamaged.Contains(cratePos)) return;
+            
+            var tile = GetTile(x, y);
+            if (tile == null) return;
+            
+            if (tile.Type == TileType.Crate2)
+            {
+                tile.Type = TileType.Crate1;
+                alreadyDamaged.Add(cratePos);
+                OnCrateDamaged?.Invoke(tile);
+                Debug.Log($"Crate damaged at ({x},{y}), now Crate1");
+            }
+            else if (tile.Type == TileType.Crate1)
+            {
+                _grid[x, y] = null;
+                alreadyDamaged.Add(cratePos);
+                OnCrateDestroyed?.Invoke(cratePos);
+                Debug.Log($"Crate destroyed at ({x},{y})");
+                // New tile will spawn during SpawnNewTiles
+            }
+        }
+        
+        /// <summary>
+        /// Damages ice adjacent to matched positions.
+        /// </summary>
+        private void DamageAdjacentIce(List<Vector2Int> matchPositions)
+        {
+            var damagedPositions = new HashSet<Vector2Int>();
+            
+            foreach (var pos in matchPositions)
+            {
+                // Check 4 directions for ice
+                CheckAndDamageIce(pos.x - 1, pos.y, damagedPositions);
+                CheckAndDamageIce(pos.x + 1, pos.y, damagedPositions);
+                CheckAndDamageIce(pos.x, pos.y - 1, damagedPositions);
+                CheckAndDamageIce(pos.x, pos.y + 1, damagedPositions);
+            }
+        }
+        
+        private void CheckAndDamageIce(int x, int y, HashSet<Vector2Int> alreadyDamaged)
+        {
+            if (!IsValidPosition(x, y)) return;
+            
+            var icePos = new Vector2Int(x, y);
+            if (alreadyDamaged.Contains(icePos)) return;
+            
+            int iceLevel = _iceGrid[x, y];
+            if (iceLevel <= 0) return;
+            
+            // Damage ice
+            _iceGrid[x, y]--;
+            int remaining = _iceGrid[x, y];
+            alreadyDamaged.Add(icePos);
+            
+            // Create event data with position info
+            var tile = GetTile(x, y);
+            if (tile != null)
+            {
+                var iceEventData = new TileData(tile.Type, x, y);
+                iceEventData.IceLevel = remaining;
+                OnIceDamaged?.Invoke(iceEventData);
+                Debug.Log($"Adjacent ice damaged at ({x},{y}), remaining: {remaining}");
+            }
         }
         
         private void CreateSpecialTile(int x, int y, TileType specialType, TileType underlyingColor)

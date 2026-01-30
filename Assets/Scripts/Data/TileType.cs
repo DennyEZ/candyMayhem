@@ -25,12 +25,9 @@ namespace Match3.Data
         Rainbow = 23,           // 5-match - clears all of one color
         
         // Blockers
-        Ice1 = 30,              // 1 layer ice
-        Ice2 = 31,              // 2 layer ice
-        Ice3 = 32,              // 3 layer ice
-        Stone = 33,             // Indestructible obstacle
-        Crate1 = 34,            // 1-hit crate
-        Crate2 = 35,            // 2-hit crate
+        Stone = 30,             // Indestructible obstacle
+        Crate1 = 31,            // 1-hit crate
+        Crate2 = 32,            // 2-hit crate
     }
     
     /// <summary>
@@ -50,17 +47,12 @@ namespace Match3.Data
         
         public static bool IsBlocker(this TileType type)
         {
-            return type >= TileType.Ice1 && type <= TileType.Crate2;
-        }
-        
-        public static bool IsIce(this TileType type)
-        {
-            return type >= TileType.Ice1 && type <= TileType.Ice3;
+            return type == TileType.Stone || type.IsCrate();
         }
         
         public static bool IsCrate(this TileType type)
         {
-            return type >= TileType.Crate1 && type <= TileType.Crate2;
+            return type == TileType.Crate1 || type == TileType.Crate2;
         }
         
         public static bool IsMatchable(this TileType type)

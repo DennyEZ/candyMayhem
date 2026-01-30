@@ -100,6 +100,12 @@ namespace Match3.Core
             // Create visuals for the initial board
             CreateInitialBoardVisuals();
             
+            // Initialize ice overlays (fixed to cells)
+            if (level.UseIceOverlays && level.IcePositions != null)
+            {
+                BoardView.InitializeIceOverlays(level.IcePositions);
+            }
+            
             // Bind events
             BindEvents();
             
@@ -133,9 +139,15 @@ namespace Match3.Core
             // Unbind first to prevent duplicates
             InputHandler.OnSwipeDetected -= HandleSwipe;
             BoardController.OnTilesCleared -= HandleTilesCleared;
+            BoardController.OnIceDamaged -= HandleIceDamaged;
+            BoardController.OnCrateDamaged -= HandleCrateDamaged;
+            BoardController.OnCrateDestroyed -= HandleCrateDestroyed;
             
             InputHandler.OnSwipeDetected += HandleSwipe;
             BoardController.OnTilesCleared += HandleTilesCleared;
+            BoardController.OnIceDamaged += HandleIceDamaged;
+            BoardController.OnCrateDamaged += HandleCrateDamaged;
+            BoardController.OnCrateDestroyed += HandleCrateDestroyed;
         }
         
         private void OnDestroy()
@@ -143,7 +155,50 @@ namespace Match3.Core
             if (InputHandler != null)
                 InputHandler.OnSwipeDetected -= HandleSwipe;
             if (BoardController != null)
+            {
                 BoardController.OnTilesCleared -= HandleTilesCleared;
+                BoardController.OnIceDamaged -= HandleIceDamaged;
+                BoardController.OnCrateDamaged -= HandleCrateDamaged;
+                BoardController.OnCrateDestroyed -= HandleCrateDestroyed;
+            }
+        }
+        
+        private void HandleIceDamaged(Data.TileData tile)
+        {
+            BoardView.UpdateIceOverlay(tile);
+            
+            // Track Break Ice goal only when ice is fully destroyed
+            if (tile.IceLevel <= 0)
+            {
+                TrackIceBreakGoal();
+            }
+        }
+        
+        /// <summary>
+        /// Tracks progress for Break Ice goals.
+        /// </summary>
+        private void TrackIceBreakGoal()
+        {
+            foreach (var goal in _activeGoals)
+            {
+                if (goal.IsComplete) continue;
+                
+                if (goal.Type == GoalType.BreakIce)
+                {
+                    goal.AddProgress();
+                    OnGoalProgress?.Invoke(goal);
+                }
+            }
+        }
+        
+        private void HandleCrateDamaged(Data.TileData tile)
+        {
+            BoardView.UpdateCrateSprite(tile);
+        }
+        
+        private void HandleCrateDestroyed(UnityEngine.Vector2Int pos)
+        {
+            BoardView.RemoveCrateView(pos);
         }
         
         /// <summary>
@@ -303,18 +358,54 @@ namespace Match3.Core
             // Remove duplicates
             var uniqueTiles = new HashSet<TileData>(tiles);
             var tilesList = new List<TileData>(uniqueTiles);
+            var actuallyCleared = new List<TileData>();
             
-            // Clear from data
+            // Clear from data - but respect ice!
             foreach (var tile in tilesList)
             {
-                BoardController.ClearTile(tile.X, tile.Y);
+                int x = tile.X;
+                int y = tile.Y;
+                
+                // Check cell-level ice
+                int iceLevel = BoardController.GetIceLevel(x, y);
+                if (iceLevel > 0)
+                {
+                    // Damage ice instead of clearing tile
+                    BoardController.SetIceLevel(x, y, iceLevel - 1);
+                    int remaining = BoardController.GetIceLevel(x, y);
+                    
+                    // Update ice visual
+                    var iceEventData = new Data.TileData(tile.Type, x, y);
+                    iceEventData.IceLevel = remaining;
+                    BoardView.UpdateIceOverlay(iceEventData);
+                    
+                    if (remaining <= 0)
+                    {
+                        // Ice destroyed - track goal
+                        TrackIceBreakGoal();
+                        
+                        // Now clear the tile
+                        BoardController.ClearTile(x, y);
+                        actuallyCleared.Add(tile);
+                    }
+                    // If ice remains, tile stays
+                }
+                else
+                {
+                    // No ice - normal clear
+                    BoardController.ClearTile(x, y);
+                    actuallyCleared.Add(tile);
+                }
             }
             
-            // Animate clearing
-            yield return BoardView.AnimateClear(tilesList);
+            // Animate clearing (only the tiles that were actually cleared)
+            if (actuallyCleared.Count > 0)
+            {
+                yield return BoardView.AnimateClear(actuallyCleared);
+            }
             
             // Add score
-            AddScore(tilesList.Count * 15);  // Bonus points for special tile
+            AddScore(actuallyCleared.Count * 15);  // Bonus points for special tile
             
             // Sync views with data and collapse
             SetState(GameState.Collapsing);
@@ -438,9 +529,7 @@ namespace Match3.Core
                     case GoalType.CollectGem:
                         shouldProgress = tile.Type == goal.TargetTileType;
                         break;
-                    case GoalType.BreakIce:
-                        shouldProgress = tile.Type.IsIce();
-                        break;
+                    // Note: BreakIce is tracked separately via HandleIceDamaged
                     case GoalType.BreakCrate:
                         shouldProgress = tile.Type.IsCrate();
                         break;

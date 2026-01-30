@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d52f6860c35cba642b22343b45ba15bc, type: 3}
-  m_Name: Level_02
+  m_Name: Level_IceTest
   m_EditorClassIdentifier: Assembly-CSharp::Match3.Levels.LevelData
   serializationData:
     SerializedFormat: 2
@@ -44,19 +44,11 @@ MonoBehaviour:
     - Name: 
       Entry: 8
       Data: 
-  Width: 7
-  Height: 9
-  AvailableColors: 0a0000000b0000000c0000000d0000000e000000
-  Goals:
-  - Type: 0
-    TargetTileType: 14
-    TargetAmount: 30
-    CurrentAmount: 0
-  - Type: 4
-    TargetTileType: 0
-    TargetAmount: 5000
-    CurrentAmount: 0
-  MaxMoves: 25
+  Width: 8
+  Height: 8
+  AvailableColors: 0a0000000b0000000c0000000d000000
+  Goals: []
+  MaxMoves: 30
   UseCustomLayout: 0
-  UseBlockers: 1
+  UseBlockers: 0
   SpecialTileBonus: 0.1

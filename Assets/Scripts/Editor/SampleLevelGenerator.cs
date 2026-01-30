@@ -66,13 +66,13 @@ namespace Match3.Editor
                 new LevelGoal { Type = GoalType.ReachScore, TargetAmount = 5000 }
             };
             
-            // Add some ice blockers
-            level.UseBlockers = true;
-            level.BlockerPositions = new Dictionary<Vector2Int, TileType>
+            // Add some ice overlays using the new system
+            level.UseIceOverlays = true;
+            level.IcePositions = new Dictionary<Vector2Int, int>
             {
-                { new Vector2Int(3, 3), TileType.Ice1 },
-                { new Vector2Int(3, 4), TileType.Ice2 },
-                { new Vector2Int(3, 5), TileType.Ice1 },
+                { new Vector2Int(3, 3), 1 },  // 1 layer ice
+                { new Vector2Int(3, 4), 2 },  // 2 layer ice
+                { new Vector2Int(3, 5), 1 },  // 1 layer ice
             };
             
             AssetDatabase.CreateAsset(level, "Assets/Levels/Level_02.asset");
@@ -94,9 +94,9 @@ namespace Match3.Editor
                 new LevelGoal { Type = GoalType.CollectGem, TargetTileType = TileType.Orange, TargetAmount = 25 }
             };
             
-            // Ice pattern
-            level.UseBlockers = true;
-            level.BlockerPositions = new Dictionary<Vector2Int, TileType>();
+            // Ice pattern using new overlay system
+            level.UseIceOverlays = true;
+            level.IcePositions = new Dictionary<Vector2Int, int>();
             
             // Create a diamond pattern of ice
             int center = 4;
@@ -106,10 +106,8 @@ namespace Match3.Editor
                 {
                     if (Mathf.Abs(i - 2) + Mathf.Abs(j - 2) <= 2)
                     {
-                        int layers = 3 - (Mathf.Abs(i - 2) + Mathf.Abs(j - 2));
-                        var iceType = layers == 3 ? TileType.Ice3 : 
-                                     layers == 2 ? TileType.Ice2 : TileType.Ice1;
-                        level.BlockerPositions[new Vector2Int(center - 2 + i, center - 2 + j)] = iceType;
+                        int iceLevel = 3 - (Mathf.Abs(i - 2) + Mathf.Abs(j - 2));
+                        level.IcePositions[new Vector2Int(center - 2 + i, center - 2 + j)] = iceLevel;
                     }
                 }
             }

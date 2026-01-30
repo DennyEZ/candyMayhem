@@ -16,6 +16,11 @@ namespace Match3.Data
         public bool IsMatched;
         public bool IsNew;  // Just spawned, needs drop animation
         
+        // Ice overlay (0 = no ice, 1-3 = ice layers)
+        public int IceLevel;
+        
+        public bool HasIce => IceLevel > 0;
+        
         public TileData(TileType type, int x, int y)
         {
             Type = type;
@@ -24,6 +29,7 @@ namespace Match3.Data
             Y = y;
             IsMatched = false;
             IsNew = false;
+            IceLevel = 0;
         }
         
         public TileData Clone()
@@ -32,7 +38,8 @@ namespace Match3.Data
             {
                 UnderlyingColor = this.UnderlyingColor,
                 IsMatched = this.IsMatched,
-                IsNew = this.IsNew
+                IsNew = this.IsNew,
+                IceLevel = this.IceLevel
             };
         }
         

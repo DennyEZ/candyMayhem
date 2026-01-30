@@ -24,9 +24,7 @@ namespace Match3.Views
         public Sprite RainbowSprite;
         
         [Header("Blockers")]
-        public Sprite Ice1Sprite;
-        public Sprite Ice2Sprite;
-        public Sprite Ice3Sprite;
+        public Sprite IceOverlaySprite;  // Used for ice overlay on gems
         public Sprite StoneSprite;
         public Sprite Crate1Sprite;
         public Sprite Crate2Sprite;
@@ -48,9 +46,6 @@ namespace Match3.Views
                 case TileType.VerticalRocket: return VerticalRocketSprite ?? DefaultCircle;
                 case TileType.Bomb: return BombSprite ?? DefaultCircle;
                 case TileType.Rainbow: return RainbowSprite ?? DefaultCircle;
-                case TileType.Ice1: return Ice1Sprite ?? DefaultCircle;
-                case TileType.Ice2: return Ice2Sprite ?? DefaultCircle;
-                case TileType.Ice3: return Ice3Sprite ?? DefaultCircle;
                 case TileType.Stone: return StoneSprite ?? DefaultCircle;
                 case TileType.Crate1: return Crate1Sprite ?? DefaultCircle;
                 case TileType.Crate2: return Crate2Sprite ?? DefaultCircle;

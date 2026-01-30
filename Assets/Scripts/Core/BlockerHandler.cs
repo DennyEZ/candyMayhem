@@ -41,23 +41,30 @@ namespace Match3.Core
             _iceOverlays.Clear();
             _crateHealth.Clear();
             
-            if (!levelData.UseBlockers) return;
-            
-            foreach (var kvp in levelData.BlockerPositions)
+            // Initialize ice overlays from new IcePositions dictionary
+            if (levelData.UseIceOverlays)
             {
-                var pos = kvp.Key;
-                var blockerType = kvp.Value;
-                
-                if (blockerType.IsIce())
+                foreach (var kvp in levelData.IcePositions)
                 {
-                    int layers = blockerType == TileType.Ice1 ? 1 :
-                                 blockerType == TileType.Ice2 ? 2 : 3;
-                    _iceOverlays[pos] = layers;
+                    var pos = kvp.Key;
+                    var iceLevel = Mathf.Clamp(kvp.Value, 1, 3);
+                    _iceOverlays[pos] = iceLevel;
                 }
-                else if (blockerType.IsCrate())
+            }
+            
+            // Initialize crate health from BlockerPositions
+            if (levelData.UseBlockers)
+            {
+                foreach (var kvp in levelData.BlockerPositions)
                 {
-                    int health = blockerType == TileType.Crate1 ? 1 : 2;
-                    _crateHealth[pos] = health;
+                    var pos = kvp.Key;
+                    var blockerType = kvp.Value;
+                    
+                    if (blockerType.IsCrate())
+                    {
+                        int health = blockerType == TileType.Crate1 ? 1 : 2;
+                        _crateHealth[pos] = health;
+                    }
                 }
             }
         }

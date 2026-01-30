@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Sirenix.OdinInspector;
+using Sirenix.Serialization;
 
 namespace Match3.Levels
 {
@@ -60,7 +61,7 @@ namespace Match3.Levels
     /// Uses Odin Inspector for a powerful level editor experience.
     /// </summary>
     [CreateAssetMenu(fileName = "Level_", menuName = "Match3/Level Data")]
-    public class LevelData : ScriptableObject
+    public class LevelData : SerializedScriptableObject
     {
         [Title("Board Configuration")]
         [PropertyRange(5, 12)]
@@ -97,14 +98,23 @@ namespace Match3.Levels
         [ToggleLeft]
         public bool UseCustomLayout = false;
         
-        [Title("Blockers")]
-        [InfoBox("Define blocker positions. Format: (x, y) -> TileType")]
+        [Title("Blockers (Crates & Stone)")]
+        [InfoBox("Crates are damaged by adjacent matches. Stone is indestructible. Only use Crate1, Crate2, or Stone here.")]
         [ShowIf("@UseBlockers")]
         [DictionaryDrawerSettings(KeyLabel = "Position", ValueLabel = "Blocker Type")]
         public Dictionary<Vector2Int, Data.TileType> BlockerPositions = new Dictionary<Vector2Int, Data.TileType>();
         
         [ToggleLeft]
         public bool UseBlockers = false;
+        
+        [Title("Ice Overlays")]
+        [InfoBox("Ice is a semi-transparent layer on top of gems. Matching the gem inside damages the ice. Ice Level: 1-3 (higher = more layers).")]
+        [ShowIf("@UseIceOverlays")]
+        [DictionaryDrawerSettings(KeyLabel = "Position", ValueLabel = "Ice Level (1-3)")]
+        public Dictionary<Vector2Int, int> IcePositions = new Dictionary<Vector2Int, int>();
+        
+        [ToggleLeft]
+        public bool UseIceOverlays = false;
         
         [Title("Difficulty Settings")]
         [PropertyRange(0f, 1f)]
@@ -123,6 +133,12 @@ namespace Match3.Levels
                     InitialLayout[x, y] = Data.TileType.None;
                 }
             }
+            
+            Debug.Log($"✓ Initialized {Width}x{Height} layout grid for '{name}'");
+            
+            #if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(this);
+            #endif
         }
         
         [Button("Validate Level", ButtonSizes.Medium)]
