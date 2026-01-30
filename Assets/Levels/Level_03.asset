@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d52f6860c35cba642b22343b45ba15bc, type: 3}
+  m_Name: Level_03
+  m_EditorClassIdentifier: Assembly-CSharp::Match3.Levels.LevelData
+  Width: 9
+  Height: 9
+  AvailableColors: 0a0000000b0000000c0000000d0000000e0000000f000000
+  Goals:
+  - Type: 1
+    TargetTileType: 0
+    TargetAmount: 15
+    CurrentAmount: 0
+  - Type: 0
+    TargetTileType: 15
+    TargetAmount: 25
+    CurrentAmount: 0
+  MaxMoves: 35
+  UseCustomLayout: 0
+  UseBlockers: 1
+  SpecialTileBonus: 0.1
