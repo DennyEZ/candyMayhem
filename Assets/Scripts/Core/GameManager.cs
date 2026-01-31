@@ -25,8 +25,13 @@ namespace Match3.Core
         public BoardView BoardView;
         
         [Required]
+        public Views.BoardBackgroundView BackgroundView;
+        
+        [Required]
         public InputHandler InputHandler;
         
+        [Title("UI References")]
+        public UI.GameUI GameUI;
         [Required]
         public TilePool TilePool;
         
@@ -44,15 +49,11 @@ namespace Match3.Core
         private int _movesRemaining;
         
         [ShowInInspector, ReadOnly]
-        private int _currentScore;
-        
-        [ShowInInspector, ReadOnly]
         private List<LevelGoal> _activeGoals;
         
         // Events for UI
         public event Action<GameState> OnStateChanged;
         public event Action<int> OnMovesChanged;
-        public event Action<int> OnScoreChanged;
         public event Action<LevelGoal> OnGoalProgress;
         public event Action OnLevelComplete;
         public event Action OnGameOver;
@@ -81,10 +82,28 @@ namespace Match3.Core
         [Button("Start Level")]
         public void StartLevel(LevelData level)
         {
+            if (level == null)
+            {
+                Debug.LogError("Cannot start level: LevelData is null!");
+                return;
+            }
+            
             CurrentLevel = level;
             _movesRemaining = level.MaxMoves;
-            _currentScore = 0;
-            _activeGoals = level.CreateGoalInstances();
+            _activeGoals = new List<LevelGoal>();
+            
+            // Clone goals so we don't modify the asset
+            foreach (var goal in level.Goals)
+            {
+                var goalClone = new LevelGoal
+                {
+                    Type = goal.Type,
+                    TargetTileType = goal.TargetTileType,
+                    TargetAmount = goal.TargetAmount,
+                    CurrentAmount = 0
+                };
+                _activeGoals.Add(goalClone);
+            }
             
             SetState(GameState.Initializing);
             
@@ -94,8 +113,16 @@ namespace Match3.Core
             // Initialize board data
             BoardController.Initialize(level);
             
-            // Initialize board view
+            // Initialize board view (Calculates sizes and offsets)
             BoardView.Initialize(level.Width, level.Height);
+            
+            // Initialize background view
+            if (BackgroundView != null)
+            {
+                // Calculate effective size from BoardView's updated settings
+                float effectiveSize = BoardView.TileSize + BoardView.TileSpacing;
+                BackgroundView.Initialize(level, effectiveSize, BoardView.BoardOffset);
+            }
             
             // Create visuals for the initial board
             CreateInitialBoardVisuals();
@@ -109,11 +136,16 @@ namespace Match3.Core
             // Bind events
             BindEvents();
             
+            // Initialize UI
+            if (GameUI != null)
+            {
+                GameUI.InitializeForLevel(level);
+            }
+            
             // Ready for input
             SetState(GameState.WaitingForInput);
             
             OnMovesChanged?.Invoke(_movesRemaining);
-            OnScoreChanged?.Invoke(_currentScore);
             
             Debug.Log($"Level started! Board: {level.Width}x{level.Height}, Moves: {_movesRemaining}");
         }
@@ -405,7 +437,8 @@ namespace Match3.Core
             }
             
             // Add score
-            AddScore(actuallyCleared.Count * 15);  // Bonus points for special tile
+            // Score removed
+
             
             // Sync views with data and collapse
             SetState(GameState.Collapsing);
@@ -455,7 +488,8 @@ namespace Match3.Core
                     yield return BoardView.AnimateClear(cleared);
                     
                     // Add score
-                    AddScore(cleared.Count * 10);
+                    // Score removed
+
                     
                     SetState(GameState.Collapsing);
                     
@@ -552,21 +586,8 @@ namespace Match3.Core
             return true;
         }
         
-        private void AddScore(int points)
-        {
-            _currentScore += points;
-            OnScoreChanged?.Invoke(_currentScore);
-            
-            // Check score-based goals
-            foreach (var goal in _activeGoals)
-            {
-                if (goal.Type == GoalType.ReachScore && !goal.IsComplete)
-                {
-                    goal.CurrentAmount = _currentScore;
-                    OnGoalProgress?.Invoke(goal);
-                }
-            }
-        }
+        // Score method removed
+
         
         private void SetState(GameState newState)
         {

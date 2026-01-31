@@ -44,6 +44,28 @@ MonoBehaviour:
     - Name: 
       Entry: 8
       Data: 
+    - Name: IcePositions
+      Entry: 7
+      Data: 2|System.Collections.Generic.Dictionary`2[[UnityEngine.Vector2Int, UnityEngine.CoreModule],[System.Int32,
+        mscorlib]], mscorlib
+    - Name: comparer
+      Entry: 7
+      Data: 3|System.Collections.Generic.GenericEqualityComparer`1[[UnityEngine.Vector2Int,
+        UnityEngine.CoreModule]], mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+  LevelNumber: 2
+  BackgroundSprite: {fileID: 0}
   Width: 7
   Height: 9
   AvailableColors: 0a0000000b0000000c0000000d0000000e000000
@@ -59,4 +81,5 @@ MonoBehaviour:
   MaxMoves: 25
   UseCustomLayout: 0
   UseBlockers: 1
+  UseIceOverlays: 0
   SpecialTileBonus: 0.1

@@ -54,7 +54,9 @@ namespace Match3.UI
             
             if (ProgressText != null)
             {
-                ProgressText.text = $"{goal.CurrentAmount}/{goal.TargetAmount}";
+                // User wants remaining amount (e.g. "10")
+                int remaining = Mathf.Max(0, goal.TargetAmount - goal.CurrentAmount);
+                ProgressText.text = remaining.ToString();
             }
             
             if (ProgressFill != null)

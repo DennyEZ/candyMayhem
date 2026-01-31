@@ -17,9 +17,10 @@ namespace Match3.UI
     {
         [Title("References")]
         public GameManager GameManager;
+        public Image BackgroundImage;
         
         [Title("Header UI")]
-        public TextMeshProUGUI ScoreText;
+        public TextMeshProUGUI LevelText;
         public TextMeshProUGUI MovesText;
         
         [Title("Goal UI")]
@@ -65,7 +66,6 @@ namespace Match3.UI
         
         private void BindEvents()
         {
-            GameManager.OnScoreChanged += UpdateScore;
             GameManager.OnMovesChanged += UpdateMoves;
             GameManager.OnGoalProgress += UpdateGoalProgress;
             GameManager.OnLevelComplete += ShowWinPanel;
@@ -77,7 +77,6 @@ namespace Match3.UI
         {
             if (GameManager != null)
             {
-                GameManager.OnScoreChanged -= UpdateScore;
                 GameManager.OnMovesChanged -= UpdateMoves;
                 GameManager.OnGoalProgress -= UpdateGoalProgress;
                 GameManager.OnLevelComplete -= ShowWinPanel;
@@ -91,9 +90,29 @@ namespace Match3.UI
         /// </summary>
         public void InitializeForLevel(LevelData level)
         {
-            UpdateScore(0);
+            Debug.Log($"GameUI: Initializing for Level {level.LevelNumber}...");
+            
+            UpdateLevel(level.LevelNumber);
+            
+            if (BackgroundImage != null && level.BackgroundSprite != null)
+            {
+                BackgroundImage.sprite = level.BackgroundSprite;
+            }
+            
             UpdateMoves(level.MaxMoves);
             CreateGoalItems(level.Goals);
+        }
+        
+        private void UpdateLevel(int levelNumber)
+        {
+            if (LevelText != null)
+            {
+                LevelText.text = levelNumber.ToString();
+            }
+            else
+            {
+                Debug.LogWarning("GameUI: LevelText reference is missing!");
+            }
         }
         
         private void CreateGoalItems(List<LevelGoal> goals)
@@ -106,29 +125,38 @@ namespace Match3.UI
             }
             _goalItems.Clear();
             
+            Debug.Log($"GameUI: Creating {goals.Count} goal items...");
+            
+            if (GoalsContainer == null) Debug.LogWarning("GameUI: GoalsContainer reference is missing!");
+            if (GoalItemPrefab == null) Debug.LogWarning("GameUI: GoalItemPrefab reference is missing!");
+            
             // Create new goal items
             if (GoalsContainer != null && GoalItemPrefab != null)
             {
                 foreach (var goal in goals)
                 {
                     var itemGO = Instantiate(GoalItemPrefab, GoalsContainer);
+                    
+                    // Force reset transform to avoid invisible UI issues
+                    itemGO.transform.localScale = Vector3.one;
+                    itemGO.transform.localPosition = Vector3.zero; // Let LayoutGroup handle X/Y, but ensure Z is 0
+                    
                     var itemUI = itemGO.GetComponent<GoalItemUI>();
                     if (itemUI != null)
                     {
                         itemUI.Setup(goal);
                         _goalItems.Add(itemUI);
                     }
+                    else
+                    {
+                        Debug.LogError("GameUI: GoalItemPrefab is missing GoalItemUI component!");
+                    }
                 }
             }
         }
         
-        private void UpdateScore(int score)
-        {
-            if (ScoreText != null)
-            {
-                ScoreText.text = score.ToString("N0");
-            }
-        }
+        // Score removed
+
         
         private void UpdateMoves(int moves)
         {

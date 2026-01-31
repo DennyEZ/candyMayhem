@@ -12,6 +12,56 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d52f6860c35cba642b22343b45ba15bc, type: 3}
   m_Name: Level_03
   m_EditorClassIdentifier: Assembly-CSharp::Match3.Levels.LevelData
+  serializationData:
+    SerializedFormat: 2
+    SerializedBytes: 
+    ReferencedUnityObjects: []
+    SerializedBytesString: 
+    Prefab: {fileID: 0}
+    PrefabModificationsReferencedUnityObjects: []
+    PrefabModifications: []
+    SerializationNodes:
+    - Name: InitialLayout
+      Entry: 6
+      Data: 
+    - Name: BlockerPositions
+      Entry: 7
+      Data: 0|System.Collections.Generic.Dictionary`2[[UnityEngine.Vector2Int, UnityEngine.CoreModule],[Match3.Data.TileType,
+        Assembly-CSharp]], mscorlib
+    - Name: comparer
+      Entry: 7
+      Data: 1|System.Collections.Generic.GenericEqualityComparer`1[[UnityEngine.Vector2Int,
+        UnityEngine.CoreModule]], mscorlib
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+    - Name: IcePositions
+      Entry: 7
+      Data: 2|System.Collections.Generic.Dictionary`2[[UnityEngine.Vector2Int, UnityEngine.CoreModule],[System.Int32,
+        mscorlib]], mscorlib
+    - Name: comparer
+      Entry: 9
+      Data: 1
+    - Name: 
+      Entry: 12
+      Data: 0
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+  LevelNumber: 3
+  BackgroundSprite: {fileID: 0}
   Width: 9
   Height: 9
   AvailableColors: 0a0000000b0000000c0000000d0000000e0000000f000000
@@ -27,4 +77,5 @@ MonoBehaviour:
   MaxMoves: 35
   UseCustomLayout: 0
   UseBlockers: 1
+  UseIceOverlays: 0
   SpecialTileBonus: 0.1

@@ -63,6 +63,14 @@ namespace Match3.Levels
     [CreateAssetMenu(fileName = "Level_", menuName = "Match3/Level Data")]
     public class LevelData : SerializedScriptableObject
     {
+        [Title("Level Info")]
+        [PropertyRange(1, 999)]
+        public int LevelNumber = 1;
+        
+        [Tooltip("Optional background image for this level.")]
+        [AssetsOnly]
+        public Sprite BackgroundSprite;
+        
         [Title("Board Configuration")]
         [PropertyRange(5, 12)]
         public int Width = 8;
