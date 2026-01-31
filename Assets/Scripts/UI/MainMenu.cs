@@ -7,8 +7,7 @@ namespace Match3.UI
     {
         public void PlayGame()
         {
-            // Assuming "SampleScene" is your game scene name
-            SceneManager.LoadScene("SampleScene");
+            SceneManager.LoadScene("LevelSelect");
         }
 
         public void QuitGame()

@@ -70,6 +70,12 @@ namespace Match3.Core
         
         private void Start()
         {
+            // Check if a level was selected from the menu
+            if (LevelContext.SelectedLevel != null)
+            {
+                CurrentLevel = LevelContext.SelectedLevel;
+            }
+            
             if (CurrentLevel != null)
             {
                 StartLevel(CurrentLevel);
@@ -518,6 +524,9 @@ namespace Match3.Core
             // Check win/lose conditions
             if (CheckWinCondition())
             {
+                // Unlock next level
+                ProgressionManager.UnlockNextLevel(CurrentLevel.LevelNumber);
+                
                 SetState(GameState.LevelComplete);
                 OnLevelComplete?.Invoke();
             }

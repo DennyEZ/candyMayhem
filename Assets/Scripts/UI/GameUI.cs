@@ -18,6 +18,8 @@ namespace Match3.UI
         [Title("References")]
         public GameManager GameManager;
         public Image BackgroundImage;
+        [Required]
+        public Views.TileSpriteConfig SpriteConfig;
         
         [Title("Header UI")]
         public TextMeshProUGUI LevelText;
@@ -144,7 +146,15 @@ namespace Match3.UI
                     var itemUI = itemGO.GetComponent<GoalItemUI>();
                     if (itemUI != null)
                     {
-                        itemUI.Setup(goal);
+                        Sprite goalSprite = null;
+                        
+                        // If it's a gem goal, get the specific sprite
+                        if (goal.Type == GoalType.CollectGem && SpriteConfig != null)
+                        {
+                            goalSprite = SpriteConfig.GetSprite(goal.TargetTileType);
+                        }
+                        
+                        itemUI.Setup(goal, goalSprite);
                         _goalItems.Add(itemUI);
                     }
                     else

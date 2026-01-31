@@ -28,15 +28,26 @@ namespace Match3.UI
         /// <summary>
         /// Sets up this goal item display.
         /// </summary>
-        public void Setup(LevelGoal goal)
+        /// <summary>
+        /// Sets up this goal item display.
+        /// </summary>
+        public void Setup(LevelGoal goal, Sprite customIcon = null)
         {
             Goal = goal;
             
             // Set icon based on goal type
             if (IconImage != null)
             {
-                IconImage.sprite = GetIconForGoal(goal);
-                IconImage.color = GetColorForGoal(goal);
+                if (customIcon != null)
+                {
+                    IconImage.sprite = customIcon;
+                    IconImage.color = Color.white; // Use original sprite colors
+                }
+                else
+                {
+                    IconImage.sprite = GetIconForGoal(goal);
+                    IconImage.color = GetColorForGoal(goal);
+                }
             }
             
             UpdateProgress(goal);

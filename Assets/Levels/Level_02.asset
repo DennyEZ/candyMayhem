@@ -67,19 +67,19 @@ MonoBehaviour:
   LevelNumber: 2
   BackgroundSprite: {fileID: 0}
   Width: 7
-  Height: 9
+  Height: 12
   AvailableColors: 0a0000000b0000000c0000000d0000000e000000
   Goals:
   - Type: 0
     TargetTileType: 14
     TargetAmount: 30
     CurrentAmount: 0
-  - Type: 4
-    TargetTileType: 0
-    TargetAmount: 5000
+  - Type: 0
+    TargetTileType: 15
+    TargetAmount: 20
     CurrentAmount: 0
   MaxMoves: 25
   UseCustomLayout: 0
-  UseBlockers: 1
+  UseBlockers: 0
   UseIceOverlays: 0
   SpecialTileBonus: 0.1
