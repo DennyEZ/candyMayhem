@@ -56,6 +56,14 @@ namespace Match3.UI
         {
             gameObject.SetActive(true);
             
+            // Ensure the panel's Canvas renders on top of gems (SpriteRenderer order 10-20)
+            var canvas = GetComponentInParent<Canvas>();
+            if (canvas != null)
+            {
+                canvas.overrideSorting = true;
+                canvas.sortingOrder = 100; // Higher than gems (10) and effects (20)
+            }
+            
             if (PanelGroup != null)
             {
                 PanelGroup.alpha = 0f;
