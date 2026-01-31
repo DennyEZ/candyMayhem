@@ -68,7 +68,7 @@ MonoBehaviour:
   BackgroundSprite: {fileID: 0}
   Width: 7
   Height: 12
-  AvailableColors: 0a0000000b0000000c0000000d0000000e000000
+  AvailableColors: 0a0000000b0000000c0000000d0000000e0000000f000000
   Goals:
   - Type: 0
     TargetTileType: 14

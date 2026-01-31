@@ -68,11 +68,12 @@ namespace Match3.Editor
             
             // Add some ice overlays using the new system
             level.UseIceOverlays = true;
-            level.IcePositions = new Dictionary<Vector2Int, int>
+            level.UseIceOverlays = true;
+            level.IcePositions = new List<IceData>
             {
-                { new Vector2Int(3, 3), 1 },  // 1 layer ice
-                { new Vector2Int(3, 4), 2 },  // 2 layer ice
-                { new Vector2Int(3, 5), 1 },  // 1 layer ice
+                new IceData { Position = new Vector2Int(3, 3), Level = 1 },
+                new IceData { Position = new Vector2Int(3, 4), Level = 2 },
+                new IceData { Position = new Vector2Int(3, 5), Level = 1 },
             };
             
             AssetDatabase.CreateAsset(level, "Assets/Levels/Level_02.asset");
@@ -96,7 +97,7 @@ namespace Match3.Editor
             
             // Ice pattern using new overlay system
             level.UseIceOverlays = true;
-            level.IcePositions = new Dictionary<Vector2Int, int>();
+            level.IcePositions = new List<IceData>();
             
             // Create a diamond pattern of ice
             int center = 4;
@@ -107,7 +108,11 @@ namespace Match3.Editor
                     if (Mathf.Abs(i - 2) + Mathf.Abs(j - 2) <= 2)
                     {
                         int iceLevel = 3 - (Mathf.Abs(i - 2) + Mathf.Abs(j - 2));
-                        level.IcePositions[new Vector2Int(center - 2 + i, center - 2 + j)] = iceLevel;
+                        level.IcePositions.Add(new IceData 
+                        { 
+                            Position = new Vector2Int(center - 2 + i, center - 2 + j), 
+                            Level = iceLevel 
+                        });
                     }
                 }
             }

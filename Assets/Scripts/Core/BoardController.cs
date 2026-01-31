@@ -110,10 +110,12 @@ namespace Match3.Core
         
         private void ApplyBlockers(Levels.LevelData levelData)
         {
-            foreach (var kvp in levelData.BlockerPositions)
+            if (levelData.BlockerPositions == null) return;
+            
+            foreach (var blocker in levelData.BlockerPositions)
             {
-                var pos = kvp.Key;
-                var blockerType = kvp.Value;
+                var pos = blocker.Position;
+                var blockerType = blocker.Type;
                 
                 if (IsValidPosition(pos.x, pos.y))
                 {
@@ -128,10 +130,12 @@ namespace Match3.Core
         
         private void ApplyIceOverlays(Levels.LevelData levelData)
         {
-            foreach (var kvp in levelData.IcePositions)
+            if (levelData.IcePositions == null) return;
+            
+            foreach (var ice in levelData.IcePositions)
             {
-                var pos = kvp.Key;
-                var iceLevel = Mathf.Clamp(kvp.Value, 1, 3);
+                var pos = ice.Position;
+                var iceLevel = Mathf.Clamp(ice.Level, 1, 3);
                 
                 if (IsValidPosition(pos.x, pos.y))
                 {

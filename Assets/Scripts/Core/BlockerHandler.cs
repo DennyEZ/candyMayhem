@@ -44,26 +44,21 @@ namespace Match3.Core
             // Initialize ice overlays from new IcePositions dictionary
             if (levelData.UseIceOverlays)
             {
-                foreach (var kvp in levelData.IcePositions)
+                foreach (var ice in levelData.IcePositions)
                 {
-                    var pos = kvp.Key;
-                    var iceLevel = Mathf.Clamp(kvp.Value, 1, 3);
-                    _iceOverlays[pos] = iceLevel;
+                    _iceOverlays[ice.Position] = Mathf.Clamp(ice.Level, 1, 3);
                 }
             }
             
             // Initialize crate health from BlockerPositions
             if (levelData.UseBlockers)
             {
-                foreach (var kvp in levelData.BlockerPositions)
+                foreach (var blocker in levelData.BlockerPositions)
                 {
-                    var pos = kvp.Key;
-                    var blockerType = kvp.Value;
-                    
-                    if (blockerType.IsCrate())
+                    if (blocker.Type.IsCrate())
                     {
-                        int health = blockerType == TileType.Crate1 ? 1 : 2;
-                        _crateHealth[pos] = health;
+                        int health = blocker.Type == TileType.Crate1 ? 1 : 2;
+                        _crateHealth[blocker.Position] = health;
                     }
                 }
             }

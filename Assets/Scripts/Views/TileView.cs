@@ -129,6 +129,9 @@ namespace Match3.Views
             
             UpdateVisuals(data.Type);
             
+            // Gem at order 10 (Background/Board is lower, Ice will be higher)
+            _spriteRenderer.sortingOrder = 10;
+            
             // Apply ice overlay if present
             UpdateIceOverlay(data.IceLevel);
             

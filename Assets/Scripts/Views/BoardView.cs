@@ -5,6 +5,7 @@ using Sirenix.OdinInspector;
 using DG.Tweening;
 using Match3.Core;
 using Match3.Data;
+using Match3.Levels;
 
 namespace Match3.Views
 {
@@ -30,6 +31,9 @@ namespace Match3.Views
         
         [Tooltip("Parent transform for ice overlays (optional, uses TileParent if null)")]
         public Transform IceOverlayParent;
+        
+        [Range(0f, 1f)]
+        public float IceOpacity = 0.75f;
         
         [Title("Grid Settings")]
         public float TileSize = 1.2f;
@@ -186,16 +190,16 @@ namespace Match3.Views
         /// Initializes ice overlays from level data.
         /// Call this after Initialize() when setting up a level.
         /// </summary>
-        public void InitializeIceOverlays(Dictionary<Vector2Int, int> icePositions)
+        public void InitializeIceOverlays(List<Levels.IceData> icePositions)
         {
             // Clear any existing ice overlays
             ClearAllIceOverlays();
             
             if (icePositions == null) return;
             
-            foreach (var kvp in icePositions)
+            foreach (var ice in icePositions)
             {
-                CreateIceOverlay(kvp.Key, kvp.Value);
+                CreateIceOverlay(ice.Position, ice.Level);
             }
             
             Debug.Log($"Created {_iceOverlays.Count} ice overlays");
@@ -214,7 +218,7 @@ namespace Match3.Views
             iceObj.transform.position = GridToWorld(cellPos.x, cellPos.y);
             
             var spriteRenderer = iceObj.AddComponent<SpriteRenderer>();
-            spriteRenderer.sortingOrder = 10;  // Render above gems
+            spriteRenderer.sortingOrder = 20;  // Render IN FRONT of gems (Order 10)
             
             // Set initial sprite based on ice level
             UpdateIceVisual(spriteRenderer, iceLevel);
@@ -268,7 +272,10 @@ namespace Match3.Views
             if (IceSprites != null && spriteIndex >= 0 && spriteIndex < IceSprites.Length && IceSprites[spriteIndex] != null)
             {
                 renderer.sprite = IceSprites[spriteIndex];
-                renderer.color = Color.white;  // No tint when using dedicated sprites
+                // Apply opacity
+                var c = Color.white;
+                c.a = IceOpacity;
+                renderer.color = c;
             }
             else
             {
@@ -277,10 +284,14 @@ namespace Match3.Views
                 
                 // More layers = more opaque
                 // Level 1: 0.35 alpha, Level 2: 0.55 alpha, Level 3: 0.75 alpha
-                float alpha = 0.15f + (iceLevel * 0.2f);
-                renderer.color = new Color(0.7f, 0.9f, 1f, alpha);  // Light blue
+                // MULTIPLIES by IceOpacity now
+                float baseAlpha = 0.15f + (iceLevel * 0.2f);
+                float finalAlpha = baseAlpha * IceOpacity;
+                
+                renderer.color = new Color(0.7f, 0.9f, 1f, finalAlpha);  // Light blue
             }
         }
+
         
         /// <summary>
         /// Animates ice cracking effect.
@@ -833,6 +844,26 @@ namespace Match3.Views
                 Debug.LogError($"ValidateBoard: Repaired {missingViews} missing views, removed {orphanedViews} orphaned views");
             }
         }
+
+        #if UNITY_EDITOR
+        private void OnValidate()
+        {
+            // Update active ice overlays when Opacity changes in Inspector
+            if (_iceOverlays != null)
+            {
+                foreach (var kvp in _iceOverlays)
+                {
+                    if (kvp.Value != null)
+                    {
+                        // Update alpha
+                        var c = kvp.Value.color;
+                        c.a = IceOpacity;
+                        kvp.Value.color = c;
+                    }
+                }
+            }
+        }
+        #endif
     }
 }
 

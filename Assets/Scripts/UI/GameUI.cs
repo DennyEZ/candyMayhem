@@ -30,15 +30,13 @@ namespace Match3.UI
         public GameObject GoalItemPrefab;
         
         [Title("Panels")]
-        public GameObject WinPanel;
-        public GameObject LosePanel;
+        public ResultPanel WinPanel;
+        public ResultPanel LosePanel;
         public GameObject PausePanel;
         
         [Title("Buttons")]
         public Button PauseButton;
-        public Button RestartButton;
-        public Button NextLevelButton;
-        public Button QuitButton;
+        public Button HUD_RestartButton;
         
         private List<GoalItemUI> _goalItems = new List<GoalItemUI>();
         
@@ -53,17 +51,32 @@ namespace Match3.UI
             }
             
             // Hide panels initially
-            if (WinPanel != null) WinPanel.SetActive(false);
-            if (LosePanel != null) LosePanel.SetActive(false);
+            if (WinPanel != null) WinPanel.Hide();
+            if (LosePanel != null) LosePanel.Hide();
             if (PausePanel != null) PausePanel.SetActive(false);
             
             // Setup buttons
             if (PauseButton != null)
                 PauseButton.onClick.AddListener(OnPauseClicked);
-            if (RestartButton != null)
-                RestartButton.onClick.AddListener(OnRestartClicked);
-            if (QuitButton != null)
-                QuitButton.onClick.AddListener(OnQuitClicked);
+                
+            if (HUD_RestartButton != null)
+                HUD_RestartButton.onClick.AddListener(OnRestartClicked);
+                
+            // Setup Panel Events
+            if (WinPanel != null)
+            {
+                WinPanel.OnNextLevelClicked.AddListener(OnNextLevelClicked);
+                WinPanel.OnRestartClicked.AddListener(OnRestartClicked);
+                WinPanel.OnQuitClicked.AddListener(OnQuitClicked);
+                WinPanel.OnHomeClicked.AddListener(OnHomeClicked);
+            }
+            
+            if (LosePanel != null)
+            {
+                LosePanel.OnRestartClicked.AddListener(OnRestartClicked);
+                LosePanel.OnQuitClicked.AddListener(OnQuitClicked);
+                LosePanel.OnHomeClicked.AddListener(OnHomeClicked);
+            }
         }
         
         private void BindEvents()
@@ -103,6 +116,11 @@ namespace Match3.UI
             
             UpdateMoves(level.MaxMoves);
             CreateGoalItems(level.Goals);
+            
+            // Ensure panels are hidden at start of level
+            if (WinPanel != null) WinPanel.Hide();
+            if (LosePanel != null) LosePanel.Hide();
+            if (PausePanel != null) PausePanel.SetActive(false);
         }
         
         private void UpdateLevel(int levelNumber)
@@ -211,7 +229,7 @@ namespace Match3.UI
         {
             if (WinPanel != null)
             {
-                WinPanel.SetActive(true);
+                WinPanel.Show();
             }
         }
         
@@ -219,7 +237,7 @@ namespace Match3.UI
         {
             if (LosePanel != null)
             {
-                LosePanel.SetActive(true);
+                LosePanel.Show();
             }
         }
         
@@ -239,8 +257,8 @@ namespace Match3.UI
         {
             if (GameManager != null && GameManager.CurrentLevel != null)
             {
-                if (WinPanel != null) WinPanel.SetActive(false);
-                if (LosePanel != null) LosePanel.SetActive(false);
+                if (WinPanel != null) WinPanel.Hide();
+                if (LosePanel != null) LosePanel.Hide();
                 if (PausePanel != null) PausePanel.SetActive(false);
                 
                 GameManager.StartLevel(GameManager.CurrentLevel);
@@ -249,8 +267,24 @@ namespace Match3.UI
 
         private void OnQuitClicked()
         {
-            // Assuming "MainMenu" is the name of your menu scene
+            
             SceneManager.LoadScene("MainMenu");
+        }
+        private void OnNextLevelClicked()
+        {
+            if (GameManager != null)
+            {
+                // Hide panels before new level starts
+                if (WinPanel != null) WinPanel.Hide();
+                if (LosePanel != null) LosePanel.Hide();
+                
+                GameManager.LoadNextLevel();
+            }
+        }
+        
+        private void OnHomeClicked()
+        {
+            SceneManager.LoadScene("LevelSelect");
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Sirenix.OdinInspector;
 using Match3.Data;
 using Match3.Levels;
@@ -38,6 +39,10 @@ namespace Match3.Core
         [Title("Current Level")]
         [Required]
         public LevelData CurrentLevel;
+        
+        [Title("Level List")]
+        [SerializeField]
+        public List<LevelData> Levels;
         
         [Title("Game State")]
         [ShowInInspector, ReadOnly]
@@ -154,6 +159,31 @@ namespace Match3.Core
             OnMovesChanged?.Invoke(_movesRemaining);
             
             Debug.Log($"Level started! Board: {level.Width}x{level.Height}, Moves: {_movesRemaining}");
+        }
+        
+        [Button("Load Next Level")]
+        public void LoadNextLevel()
+        {
+            if (Levels == null || Levels.Count == 0)
+            {
+                Debug.LogWarning("No levels defined in GameManager!");
+                SceneManager.LoadScene("LevelSelect"); // Fallback
+                return;
+            }
+            
+            // Find current level index
+            int currentIndex = Levels.FindIndex(l => l.LevelNumber == CurrentLevel.LevelNumber);
+            
+            if (currentIndex >= 0 && currentIndex < Levels.Count - 1)
+            {
+                var nextLevel = Levels[currentIndex + 1];
+                StartLevel(nextLevel);
+            }
+            else
+            {
+                Debug.Log("No next level found (end of content). Returning to menu.");
+                SceneManager.LoadScene("LevelSelect");
+            }
         }
         
         private void CreateInitialBoardVisuals()
@@ -439,6 +469,9 @@ namespace Match3.Core
             // Animate clearing (only the tiles that were actually cleared)
             if (actuallyCleared.Count > 0)
             {
+                // Fix: Manually trigger goal tracking since BoardController.ClearTile doesn't fire events
+                HandleTilesCleared(actuallyCleared);
+                
                 yield return BoardView.AnimateClear(actuallyCleared);
             }
             
